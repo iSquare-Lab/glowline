@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+		<title>Glowline · a light puzzle</title>
+		<meta name="description" content="Turn the tiles to carry light from the sun to every lantern. 40 levels and a new puzzle every day. Made with Godot.">
+		<meta name="theme-color" content="#10141e">
+		<meta name="color-scheme" content="dark">
+		<link rel="icon" href="index.icon.png" type="image/png">
+		<style>
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+body {
+	color: #eef2fa;
+	background-color: #10141e;
+	overflow: hidden;
+	touch-action: none;
+	font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+#canvas {
+	display: block;
+}
+
+#canvas:focus {
+	outline: none;
+}
+
+#status {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 18px;
+	background: radial-gradient(circle at 50% 42%, #1b2335 0, #10141e 60%);
+	padding: 24px;
+	text-align: center;
+}
+
+#status svg {
+	width: 112px;
+	height: 112px;
+	filter: drop-shadow(0 0 28px rgb(255 196 87 / 0.35));
+}
+
+#status h1 {
+	margin: 0;
+	font-size: 34px;
+	letter-spacing: -0.01em;
+}
+
+#status-text {
+	margin: 0;
+	color: #a9b4cb;
+	font-size: 15px;
+	min-height: 1.4em;
+}
+
+#status-bar {
+	width: min(280px, 70vw);
+	height: 6px;
+	border-radius: 3px;
+	background: #222b3d;
+	overflow: hidden;
+}
+
+#status-fill {
+	height: 100%;
+	width: 8%;
+	border-radius: 3px;
+	background: #ffc457;
+	transition: width 0.2s ease-out;
+}
+
+#status-notice {
+	display: none;
+	max-width: 440px;
+	padding: 14px 16px;
+	border-radius: 12px;
+	background: #3a1d22;
+	color: #ffd9dd;
+	line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	#status-fill {
+		transition: none;
+	}
+}
+		</style>
+		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+<link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+
+	</head>
+	<body>
+		<canvas id="canvas" aria-label="Glowline game">
+			Glowline needs a browser that can draw on a canvas.
+		</canvas>
+
+		<noscript>
+			<p style="padding:24px">Glowline needs JavaScript to run.</p>
+		</noscript>
+
+		<div id="status">
+			<svg viewBox="0 0 64 64" aria-hidden="true">
+				<path d="M12 32h40M32 32V13" stroke="#ffc457" stroke-width="6" stroke-linecap="round"/>
+				<circle cx="12" cy="32" r="6" fill="#ffcf6b"/><circle cx="52" cy="32" r="6" fill="#ffcf6b"/><circle cx="32" cy="13" r="6" fill="#ffcf6b"/>
+				<circle cx="32" cy="32" r="11" fill="#ffd27a"/><circle cx="32" cy="32" r="5.5" fill="#fff4d6"/>
+				<path d="M32 44v8" stroke="#4b5873" stroke-width="6" stroke-linecap="round"/>
+				<circle cx="32" cy="54" r="5" fill="#10141e" stroke="#8a97b2" stroke-width="2.5"/>
+			</svg>
+			<h1>Glowline</h1>
+			<div id="status-bar" role="progressbar" aria-label="Loading Glowline" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="status-fill"></div></div>
+			<p id="status-text" aria-live="polite">Loading the game…</p>
+			<div id="status-notice" role="alert"></div>
+		</div>
+
+		<script src="index.js"></script>
+		<script>
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":39632,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_THREADS_ENABLED = false;
+const engine = new Engine(GODOT_CONFIG);
+
+(function () {
+	const statusOverlay = document.getElementById('status');
+	const statusBar = document.getElementById('status-bar');
+	const statusFill = document.getElementById('status-fill');
+	const statusText = document.getElementById('status-text');
+	const statusNotice = document.getElementById('status-notice');
+
+	function fail(err) {
+		console.error(err);
+		const message = err instanceof Error ? err.message : (typeof err === 'string' ? err : 'Something went wrong.');
+		statusNotice.textContent = 'Glowline could not start: ' + message + ' Reload the page to try again.';
+		statusNotice.style.display = 'block';
+		statusBar.style.display = 'none';
+		statusText.textContent = '';
+	}
+
+	const missing = Engine.getMissingFeatures({threads: GODOT_THREADS_ENABLED});
+	if (missing.length !== 0) {
+		fail('this browser lacks ' + missing.join(', ') + '.');
+		return;
+	}
+
+	let lastPercent = -1;
+	engine.startGame({
+		onProgress: function (current, total) {
+			if (current > 0 && total > 0) {
+				const percent = Math.min(100, Math.round((current / total) * 100));
+				statusFill.style.width = Math.max(8, percent) + '%';
+				statusBar.setAttribute('aria-valuenow', String(percent));
+				if (percent !== lastPercent && percent % 10 === 0) {
+					statusText.textContent = percent < 100 ? 'Loading the game… ' + percent + '%' : 'Starting…';
+					lastPercent = percent;
+				}
+			}
+		},
+	}).then(function () {
+		statusOverlay.remove();
+	}, fail);
+}());
+		</script>
+	</body>
+</html>
+
