@@ -149,19 +149,19 @@ func _build_menu() -> void:
 	_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_menu)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 14)
+	column.add_theme_constant_override("separation", 9)
 	column.custom_minimum_size = Vector2(360, 0)
 	_menu.add_child(column)
 	var logo := _MenuLogo.new()
-	logo.custom_minimum_size = Vector2(0, 130)
+	logo.custom_minimum_size = Vector2(0, 104)
 	column.add_child(logo)
-	var title := _label("Glowline", 60, C_TEXT)
+	var title := _label("Glowline", 50, C_TEXT)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(title)
 	var tagline := _label("Turn the tiles. Light every lantern.", 20, C_MUTED)
 	tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(tagline)
-	column.add_child(_spacer(18))
+	column.add_child(_spacer(8))
 	_continue_button = _accent(_button("Play", _continue_journey))
 	column.add_child(_continue_button)
 	column.add_child(_button("Levels", _show_levels))
@@ -584,10 +584,10 @@ class _MenuLogo extends Control:
 		queue_redraw()
 
 	func _draw() -> void:
-		var c := size / 2.0
+		var c := size / 2.0 + Vector2(0, 6)
 		var glow := 0.5 + 0.5 * sin(_t * 2.0)
 		var pipe := 12.0
-		var ends := [Vector2(-100, 0), Vector2(100, 0), Vector2(0, -48)]
+		var ends := [Vector2(-90, 8), Vector2(90, 8), Vector2(0, -36)]
 		for e in ends:
 			draw_line(c, c + e, Color(1.0, 0.72, 0.25, 0.22), pipe * 2.4)
 			draw_line(c, c + e, Color("ffc457"), pipe)
