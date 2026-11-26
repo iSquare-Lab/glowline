@@ -1,8 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="128" height="128">
-  <rect width="64" height="64" rx="14" fill="#10141e"/>
-  <path d="M12 32h40M32 32V13" stroke="#ffc457" stroke-width="6" stroke-linecap="round"/>
-  <circle cx="12" cy="32" r="6" fill="#ffcf6b"/><circle cx="52" cy="32" r="6" fill="#ffcf6b"/><circle cx="32" cy="13" r="6" fill="#ffcf6b"/>
-  <circle cx="32" cy="32" r="11" fill="#ffd27a"/><circle cx="32" cy="32" r="5.5" fill="#fff4d6"/>
-  <path d="M32 44v8" stroke="#4b5873" stroke-width="6" stroke-linecap="round"/>
-  <circle cx="32" cy="54" r="5" fill="#10141e" stroke="#8a97b2" stroke-width="2.5"/>
+  <defs>
+    <linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a1b35"/>
+      <stop offset="0.62" stop-color="#6a3a52"/>
+      <stop offset="1" stop-color="#d98b5f"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#ffcf7a" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#ffcf7a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="32" cy="32" r="25.6" fill="url(#dusk)"/>
+  <circle cx="32" cy="37" r="15" fill="url(#glow)"/>
+  <path d="M12.5 24C21 14.5 40 13.5 51.5 20" fill="none" stroke="#3e2d26" stroke-width="4.6" stroke-linecap="round"/>
+  <path d="M12.5 24C21 14.5 40 13.5 51.5 20" fill="none" stroke="#7f9b57" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M20 18.2c-1.5-3.6.6-6.2 4.4-6.4.6 3.6-1.4 6-4.4 6.4z" fill="#a3c96f"/>
+  <path d="M42.5 16.6c2.4-3 5.6-2.8 7.6.2-2.6 2.4-5.6 2.4-7.6-.2z" fill="#a3c96f"/>
+  <path d="M32 16.2V24" stroke="#3a2420" stroke-width="1.6" stroke-linecap="round"/>
+  <rect x="27" y="23.4" width="10" height="3" rx="1" fill="#3a2420"/>
+  <ellipse cx="32" cy="36" rx="9" ry="10.2" fill="#ffad4a"/>
+  <ellipse cx="30" cy="34" rx="3.2" ry="5.4" fill="#ffe3a6" opacity="0.85"/>
+  <ellipse cx="32" cy="36" rx="4.4" ry="10.2" fill="none" stroke="#e0832c" stroke-width="1.2"/>
+  <path d="M32 25.8v20.4" stroke="#e0832c" stroke-width="1.2"/>
+  <rect x="28" y="45.4" width="8" height="2.6" rx="1" fill="#3a2420"/>
+  <path d="M32 48v4" stroke="#3a2420" stroke-width="1.6" stroke-linecap="round"/>
 </svg>

@@ -1,10 +1,14 @@
 # Glowline
 
-Glowline is a calm light puzzle made with Godot 4. Light flows from the sun in the middle of the board along the
-pipes. Turn the tiles so every lantern glows and no pipe ends in the dark.
+![A solved Glowline board: honey-coloured light on every vine, paper lanterns glowing, fireflies over a dusk garden](docs/screenshot-dark.png)
 
-Screenshots: [docs/screenshot-dark.png](docs/screenshot-dark.png)
+Glowline is a calm garden puzzle at dusk, made with Godot 4. Light flows from the sun in the middle of the board
+along the vines. Turn the tiles so every paper lantern glows and no vine ends in the dark.
 
+- **A garden, not a circuit board**: mossy flagstones under a plum and rose sky, vines with leaves that green as the
+  light passes, swaying paper lanterns. Light visibly flows out from the sun, tile after tile; a solved board
+  sends a ripple of light outward and lets fireflies out. With "reduce motion" set in the system, light shows at
+  once and nothing sways or flies.
 - **40 levels**, from 3×3 to 9×9, each made by the same seeded generator every time. The first five are short
   teaching boards (3, 4, 5, 8 and 12 moves). Plus a **daily puzzle** (8×8) that changes at midnight, your local
   time.
@@ -20,7 +24,8 @@ Screenshots: [docs/screenshot-dark.png](docs/screenshot-dark.png)
 - "How to play" opens by itself on the first visit.
 - Progress and the sound setting stay in your browser (Godot's `user://`, IndexedDB on the web). No accounts, no
   tracking, no network calls.
-- Sounds are made in code; there are no image or audio files besides the icon.
+- Sounds are made in code (a wooden tok, a wind chime, a kalimba run); there are no image or audio files besides
+  the icon.
 
 ## Accessibility and the canvas
 
@@ -77,7 +82,9 @@ There is no linter for GDScript here; the scripts are fully typed and load with 
 - `project/scripts/levels.gd`: the 40 levels (sizes, seeds, teaching levels), the daily seed (32-bit FNV-1a of
   the date, the same in every Godot version) and the star rule.
 - `project/scripts/progress.gd`: saved progress: stars, daily results, settings and the board left half done.
-- `project/scripts/board.gd`: drawing, animation and input for the board.
+- `project/scripts/board.gd`: the board on screen: input, turning, the light flowing from the sun, the win ripple.
+- `project/scripts/garden_painter.gd`: drawing the vines, leaves, sun, paper lanterns and fireflies.
+- `project/scripts/backdrop.gd`, `fireflies.gd`: the dusk sky behind every screen, and the drifting fireflies.
 - `project/scripts/main.gd`: the menu, the game screen and how a game flows.
 - `project/scripts/level_select.gd`, `dialog.gd`: the level list, and the results and how-to-play panel.
 - `project/scripts/ui.gd`: colours, the theme and small builders for labels and buttons.
