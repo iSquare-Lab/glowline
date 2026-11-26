@@ -2,15 +2,19 @@ class_name Ui
 extends RefCounted
 ## The look every screen shares: colours, the theme, and small builders for labels and buttons.
 
-const BG := Color("10141e")
-const PANEL := Color("171e2c")
-const BUTTON := Color("222b3d")
-const BUTTON_HOVER := Color("2c3750")
-const ACCENT := Color("ffc457")
-const ON_ACCENT := Color("1b1405")
-const TEXT := Color("eef2fa")
-const MUTED := Color("a9b4cb")
-const FOCUS := Color("9ec5ff")
+## A garden at dusk: plum sky, warm cream text, honey light. No cold blues.
+const SKY_TOP := Color("1f1629")
+const SKY_BOTTOM := Color("5a3446")
+const HORIZON := Color("c9805a")
+const BG := SKY_TOP
+const PANEL := Color("2b1f35")
+const BUTTON := Color("3d2c45")
+const BUTTON_HOVER := Color("4d3956")
+const ACCENT := Color("f6b85e")
+const ON_ACCENT := Color("2a1606")
+const TEXT := Color("fbefe0")
+const MUTED := Color("e0cbbd")
+const FOCUS := Color("ffe2a3")
 ## The canvas is 480 units wide at least, so on a 390 px phone a unit is 0.81 px: 54 units are 44 px.
 const BUTTON_HEIGHT := 54
 
@@ -86,3 +90,17 @@ static func count_of(amount: int, singular: String, plural: String = "") -> Stri
 	if amount == 1:
 		return "1 " + singular
 	return "%d %s" % [amount, plural if plural != "" else singular + "s"]
+
+
+static var _reduced_motion := -1
+
+
+## True when the player asked the system for less motion (prefers-reduced-motion on the web): light then
+## shows at once, lanterns hang still and no fireflies fly.
+static func reduced_motion() -> bool:
+	if _reduced_motion < 0:
+		_reduced_motion = 0
+		if OS.has_feature("web"):
+			var reduce: Variant = JavaScriptBridge.eval("window.matchMedia('(prefers-reduced-motion: reduce)').matches", true)
+			_reduced_motion = 1 if reduce == true else 0
+	return _reduced_motion == 1

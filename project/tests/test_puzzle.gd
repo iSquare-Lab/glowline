@@ -141,3 +141,19 @@ func test_same_seed_same_board() -> void:
 	check(a.tiles == b.tiles and a.solution == b.solution, "the same seed gives the same board")
 	b.generate(7, 7, 2027)
 	check(a.solution != b.solution, "another seed gives another board")
+
+
+func test_light_paths() -> void:
+	var p := _line()
+	var paths := p.light_paths()
+	check_eq(paths.depth, PackedInt32Array([1, 0, 1]), "the lanterns are one step from the sun")
+	check_eq(paths.entry, PackedInt32Array([1, -1, 3]), "light enters the left lantern from the east, the right from the west")
+	p.tiles[2] = N
+	paths = p.light_paths()
+	check_eq(paths.depth[2], -1, "a lantern turned away is not reached")
+	check_eq(paths.entry[2], -1, "and has no way in")
+	var level := Levels.make(12)
+	paths = level.light_paths()
+	var reached := level.lit()
+	for i in level.width * level.height:
+		check_eq(paths.depth[i] >= 0, reached[i] == 1, "tile %d: depth agrees with lit()" % i)

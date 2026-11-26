@@ -190,6 +190,34 @@ func lit() -> PackedByteArray:
 	return result
 
 
+## How the light travels: for every tile, how many steps from the sun the light reaches it ("depth", -1 when
+## it does not) and the side it comes in from ("entry", a direction 0-3, -1 for the sun and dark tiles).
+## The board uses it to let light flow outward from the sun.
+func light_paths() -> Dictionary:
+	var count := width * height
+	var depth := PackedInt32Array()
+	depth.resize(count)
+	depth.fill(-1)
+	var entry := PackedInt32Array()
+	entry.resize(count)
+	entry.fill(-1)
+	depth[index(source)] = 0
+	var queue: Array[Vector2i] = [source]
+	var head := 0
+	while head < queue.size():
+		var cell := queue[head]
+		head += 1
+		for d in 4:
+			if connected(cell, d):
+				var next := cell + DIRS[d]
+				var n := index(next)
+				if depth[n] < 0:
+					depth[n] = depth[index(cell)] + 1
+					entry[n] = (d + 2) % 4
+					queue.append(next)
+	return {"depth": depth, "entry": entry}
+
+
 func is_solved() -> bool:
 	for i in width * height:
 		var cell := cell_of(i)

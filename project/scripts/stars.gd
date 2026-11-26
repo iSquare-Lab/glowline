@@ -7,8 +7,8 @@ var filled := 0:
 		filled = value
 		queue_redraw()
 
-const ON := Color("ffc457")
-const OFF := Color("3a4560")
+const ON := Color("f6b85e")
+const OFF := Color("5c4664")
 
 
 func _init(count: int = 0, star_size: float = 48.0) -> void:

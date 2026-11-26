@@ -12,7 +12,7 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	var dim := ColorRect.new()
-	dim.color = Color(0.03, 0.04, 0.07, 0.72)
+	dim.color = Color(0.08, 0.04, 0.09, 0.66)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
 	var center := CenterContainer.new()

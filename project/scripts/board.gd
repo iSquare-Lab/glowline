@@ -1,8 +1,10 @@
 class_name Board
 extends Control
-## Draws a Puzzle and turns its tiles. Tap or click turns a tile clockwise (Shift: the other way);
-## a long press or a right click locks it. Keys: arrows or WASD move, Space, Enter or E turns (Shift: the other
-## way), Q turns back, L locks.
+## Draws a Puzzle as a garden at dusk and turns its tiles. Tap or click turns a tile clockwise (Shift: the
+## other way); a long press or a right click locks it. Keys: arrows or WASD move, Space, Enter or E turns
+## (Shift: the other way), Q turns back, L locks.
+## Light flows out from the sun along the vines, one tile after another; a solved board sends a ripple of
+## light out from the sun and lets fireflies out. With reduced motion, light shows at once and nothing sways.
 
 signal turned(index: int, clockwise: bool)
 signal lock_changed(index: int)
@@ -10,19 +12,24 @@ signal solved
 
 const LONG_PRESS := 0.42
 const TURN_SPEED := 14.0
+## Seconds between one ring of tiles lighting up and the next, and for light to cross one tile.
+const FLOW_STEP := 0.06
+const FLOW_FILL := 0.12
+## Seconds for the win ripple to move one tile further from the sun.
+const RIPPLE_STEP := 0.04
 
-const BG_TILE := Color("1a2232")
-const BG_TILE_LOCKED := Color("232c3f")
-const PIPE_DARK := Color("4b5873")
-const PIPE_LIT := Color("ffc457")
-const GLOW := Color(1.0, 0.72, 0.25, 0.18)
-const LANTERN_OFF := Color("8a97b2")
-const CURSOR := Color("9ec5ff")
+## Flagstones in three shades of moss, so the board does not look like a grid of identical cells.
+const STONES: Array[Color] = [Color("3a4535"), Color("404b3a"), Color("36412f")]
+const STONE_LOCKED := Color("5a644f")
+const STONE_SHADOW := Color(0.08, 0.05, 0.09, 0.55)
 
 var puzzle: Puzzle
 var interactive := true
 var _angles := PackedFloat32Array()
-var _lit := PackedByteArray()
+## When each tile began to light up (in _clock time), or -1 while it is dark.
+var _light_start := PackedFloat32Array()
+var _depth := PackedInt32Array()
+var _entry := PackedInt32Array()
 var _cell := 48.0
 var _origin := Vector2.ZERO
 var _press_index := -1
@@ -35,21 +42,30 @@ var _win_time := -1.0
 var _clock := 0.0
 ## One rounded tile style per colour, made again when the tile size changes.
 var _tile_boxes := {}
+var _fireflies: Fireflies
 
 
 func _ready() -> void:
 	focus_mode = Control.FOCUS_ALL
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	resized.connect(_layout)
+	_fireflies = Fireflies.new(12, 3)
+	add_child(_fireflies)
 
 
 func show_puzzle(p: Puzzle) -> void:
 	puzzle = p
+	var count := p.width * p.height
 	_angles = PackedFloat32Array()
-	_angles.resize(p.width * p.height)
+	_angles.resize(count)
+	_light_start = PackedFloat32Array()
+	_light_start.resize(count)
+	_light_start.fill(-1.0)
 	_cursor = p.source
 	_win_time = -1.0
 	interactive = true
+	if _fireflies:
+		_fireflies.set_active(false)
 	_refresh()
 	_layout()
 
@@ -57,10 +73,40 @@ func show_puzzle(p: Puzzle) -> void:
 func celebrate() -> void:
 	_win_time = _clock
 	interactive = false
+	_fireflies.set_active(true)
 
 
+## How far the light has crossed tile `i`: 0 dark, 1 fully lit.
+func light_of(i: int) -> float:
+	if _light_start[i] < 0.0:
+		return 0.0
+	return clampf((_clock - _light_start[i]) / FLOW_FILL, 0.0, 1.0)
+
+
+## True while light is still flowing somewhere on the board.
+func is_flowing() -> bool:
+	for i in _light_start.size():
+		if _light_start[i] >= 0.0 and _clock - _light_start[i] < FLOW_FILL:
+			return true
+	return false
+
+
+## Light newly reached tiles one ring after another, starting at the nearest of them; tiles that lost the
+## light go dark at once.
 func _refresh() -> void:
-	_lit = puzzle.lit()
+	var paths := puzzle.light_paths()
+	_depth = paths.depth
+	_entry = paths.entry
+	var first := -1
+	for i in _depth.size():
+		if _depth[i] >= 0 and _light_start[i] < 0.0:
+			first = _depth[i] if first < 0 else mini(first, _depth[i])
+	var instant := Ui.reduced_motion()
+	for i in _depth.size():
+		if _depth[i] < 0:
+			_light_start[i] = -1.0
+		elif _light_start[i] < 0.0:
+			_light_start[i] = _clock - FLOW_FILL if instant else _clock + (_depth[i] - first) * FLOW_STEP
 	queue_redraw()
 
 
@@ -75,15 +121,14 @@ func _layout() -> void:
 
 func _process(delta: float) -> void:
 	_clock += delta
-	var moving := false
 	for i in _angles.size():
 		if _angles[i] != 0.0:
 			_angles[i] = move_toward(_angles[i], 0.0, delta * TURN_SPEED)
-			moving = true
 	if _press_index >= 0 and not _press_consumed and _clock - _press_time >= LONG_PRESS:
 		_press_consumed = true
 		_toggle_lock(_press_index)
-	if moving or _win_time >= 0.0 or _press_index >= 0:
+	# Lanterns sway and the sun turns slowly, so the board is redrawn every frame while it shows.
+	if puzzle != null and is_visible_in_tree():
 		queue_redraw()
 
 
@@ -188,99 +233,99 @@ func _notification(what: int) -> void:
 func _draw() -> void:
 	if puzzle == null:
 		return
+	var calm := Ui.reduced_motion()
+	var since_win := _clock - _win_time if _win_time >= 0.0 else -1.0
 	var pulse := 0.0
-	if _win_time >= 0.0:
-		pulse = 0.5 + 0.5 * sin((_clock - _win_time) * 4.0)
-	var gap := maxf(2.0, _cell * 0.05)
-	var radius := _cell * 0.16
-	var pipe := maxf(3.0, _cell * 0.17)
+	if since_win >= 0.0 and not calm:
+		pulse = 0.5 + 0.5 * sin(since_win * 3.0)
+	var gap := maxf(2.0, _cell * 0.06)
+	var vine := maxf(3.0, _cell * 0.14)
 	var reach := _cell / 2.0
 	var count := puzzle.width * puzzle.height
-	# Three passes, so a glow is never painted over by the next tile: tiles, then glows, then pipes and lights.
+	# Passes, so nothing is painted over by the next tile: stones, glows, vines and leaves, then lights.
 	for i in count:
 		var top_left := _origin + Vector2(puzzle.cell_of(i)) * _cell
 		var rect := Rect2(top_left + Vector2(gap, gap) / 2.0, Vector2(_cell - gap, _cell - gap))
-		var bg := BG_TILE_LOCKED if puzzle.locked[i] else BG_TILE
+		var stone := STONE_LOCKED if puzzle.locked[i] else STONES[(i + puzzle.cell_of(i).y) % STONES.size()]
 		if _press_index == i and not _press_consumed:
-			bg = bg.lightened(0.08)
-		_draw_rounded_rect(rect, radius, bg)
+			stone = stone.lightened(0.1)
+		_draw_rounded_rect(Rect2(rect.position + Vector2(0, gap * 0.7), rect.size), STONE_SHADOW)
+		_draw_rounded_rect(rect, stone)
 	for i in count:
-		if not _lit[i]:
+		var lit := light_of(i)
+		if lit <= 0.0:
 			continue
-		draw_set_transform(_origin + (Vector2(puzzle.cell_of(i)) + Vector2(0.5, 0.5)) * _cell, _angles[i], Vector2.ONE)
+		draw_set_transform(_center(i), _angles[i], Vector2.ONE)
 		for d in 4:
 			if puzzle.tiles[i] & (1 << d):
-				draw_rect(_arm(d, reach, pipe * 2.0), GLOW)
+				draw_line(Vector2.ZERO, Vector2(Puzzle.DIRS[d]) * reach, Color(GardenPainter.GLOW, GardenPainter.GLOW.a * 0.6 * lit), vine * 2.3)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	for i in count:
-		var cell := puzzle.cell_of(i)
-		var top_left := _origin + Vector2(cell) * _cell
-		var center := top_left + Vector2(_cell, _cell) / 2.0
-		var lit := _lit[i] != 0
-		var color := PIPE_LIT if lit else PIPE_DARK
-		if lit and pulse > 0.0:
-			color = color.lightened(pulse * 0.35)
-		draw_set_transform(center, _angles[i], Vector2.ONE)
-		var mask := puzzle.tiles[i]
-		for d in 4:
-			if mask & (1 << d):
-				draw_rect(_arm(d, reach, pipe), color)
-		draw_circle(Vector2.ZERO, pipe / 2.0, color)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-		if cell == puzzle.source:
-			_draw_sun(center, pulse)
+		var ripple := 0.0
+		if since_win >= 0.0 and not calm:
+			ripple = clampf(1.0 - absf(since_win - _depth[i] * RIPPLE_STEP) / 0.18, 0.0, 1.0)
+		_draw_vines(i, reach, vine, ripple + pulse * 0.25)
+	for i in count:
+		var center := _center(i)
+		var lit := light_of(i)
+		var ripple := 0.0
+		if since_win >= 0.0 and not calm:
+			ripple = clampf(1.0 - absf(since_win - _depth[i] * RIPPLE_STEP) / 0.18, 0.0, 1.0)
+		if puzzle.cell_of(i) == puzzle.source:
+			GardenPainter.sun(self, center, _cell * 0.22, 0.0 if calm else _clock * 0.25, pulse)
 		elif puzzle.is_lantern(i):
-			_draw_lantern(center, lit, pulse)
+			var swing := 0.0 if calm else sin(_clock * 1.7 + i * 1.3) * 0.07 * lit
+			GardenPainter.lantern(self, center, _cell * 0.19, lit, swing, ripple)
 		if puzzle.locked[i]:
-			_draw_lock(top_left + Vector2(_cell - gap - _cell * 0.17, gap + _cell * 0.13))
+			var top_left := _origin + Vector2(puzzle.cell_of(i)) * _cell
+			LockIcon.draw_lock(self, top_left + Vector2(_cell - gap - _cell * 0.16, gap + _cell * 0.14), _cell * 0.12, LockIcon.COLOR)
 	if _show_cursor and has_focus() and interactive:
 		var top_left := _origin + Vector2(_cursor) * _cell
-		draw_rect(Rect2(top_left + Vector2(1, 1), Vector2(_cell - 2, _cell - 2)), CURSOR, false, maxf(2.0, _cell * 0.05))
+		draw_rect(Rect2(top_left + Vector2(1, 1), Vector2(_cell - 2, _cell - 2)), Ui.FOCUS, false, maxf(2.0, _cell * 0.05))
 
 
-## The pipe arm from a tile's centre to the middle of side `d`, `thickness` wide, centred on its axis.
-func _arm(d: int, reach: float, thickness: float) -> Rect2:
-	var half := thickness / 2.0
-	match d:
-		0:
-			return Rect2(-half, -reach, thickness, reach + half)
-		1:
-			return Rect2(-half, -half, reach + half, thickness)
-		2:
-			return Rect2(-half, -half, thickness, reach + half)
-		_:
-			return Rect2(-reach, -half, reach + half, thickness)
+func _center(i: int) -> Vector2:
+	return _origin + (Vector2(puzzle.cell_of(i)) + Vector2(0.5, 0.5)) * _cell
 
 
-func _draw_sun(center: Vector2, pulse: float) -> void:
-	var r := _cell * 0.24
-	draw_circle(center, r * (1.7 + pulse * 0.3), Color(1.0, 0.78, 0.3, 0.12))
-	draw_circle(center, r * 1.3, Color(1.0, 0.78, 0.3, 0.22))
-	draw_circle(center, r, Color("ffd27a"))
-	draw_circle(center, r * 0.55, Color("fff4d6"))
+## The vines of tile `i`, dark, then the part the light has reached on top: on the side the light comes in
+## from it runs from the edge to the middle, then out along the other vines. `flash` brightens lit vines.
+func _draw_vines(i: int, reach: float, width: float, flash: float) -> void:
+	var mask := puzzle.tiles[i]
+	var lit := light_of(i)
+	var is_sun := puzzle.cell_of(i) == puzzle.source
+	draw_set_transform(_center(i), _angles[i], Vector2.ONE)
+	for d in 4:
+		if mask & (1 << d):
+			GardenPainter.vine(self, Vector2.ZERO, Vector2(Puzzle.DIRS[d]) * reach, width, GardenPainter.VINE_DARK, true)
+	var color := GardenPainter.VINE_LIT.lerp(GardenPainter.VINE_FLASH, clampf(flash, 0.0, 1.0) * 0.6)
+	if lit > 0.0:
+		for d in 4:
+			if (mask & (1 << d)) == 0:
+				continue
+			var out := Vector2(Puzzle.DIRS[d]) * reach
+			if is_sun:
+				GardenPainter.vine(self, Vector2.ZERO, out * lit, width, color, false)
+			elif d == _entry[i]:
+				GardenPainter.vine(self, out, out * (1.0 - minf(1.0, lit * 2.0)), width, color, false)
+			elif lit > 0.5:
+				GardenPainter.vine(self, Vector2.ZERO, out * (lit * 2.0 - 1.0), width, color, false)
+	# One leaf on each vine, on alternating sides, greening as the light passes.
+	for d in 4:
+		if mask & (1 << d):
+			var dir := Vector2(Puzzle.DIRS[d])
+			var side := PI / 2.6 if (i + d) % 2 == 0 else -PI / 2.6
+			var leaf_color := GardenPainter.LEAF_DARK.lerp(GardenPainter.LEAF_LIT, lit)
+			GardenPainter.leaf(self, dir * reach * 0.58, dir.angle() + side, width * 1.6, leaf_color)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
-func _draw_lantern(center: Vector2, lit: bool, pulse: float) -> void:
-	var r := _cell * 0.21
-	if lit:
-		draw_circle(center, r * (1.6 + pulse * 0.25), Color(1.0, 0.75, 0.3, 0.16))
-		draw_circle(center, r, Color("ffcf6b"))
-		draw_circle(center, r * 0.5, Color("fff7e3"))
-	else:
-		draw_circle(center, r, BG_TILE)
-		draw_arc(center, r, 0.0, TAU, 32, LANTERN_OFF, maxf(2.0, _cell * 0.05), true)
-
-
-func _draw_lock(at: Vector2) -> void:
-	LockIcon.draw_lock(self, at, _cell * 0.13, LockIcon.COLOR)
-
-
-func _draw_rounded_rect(rect: Rect2, r: float, color: Color) -> void:
+func _draw_rounded_rect(rect: Rect2, color: Color) -> void:
 	var box: StyleBoxFlat = _tile_boxes.get(color)
 	if box == null:
 		box = StyleBoxFlat.new()
 		box.bg_color = color
-		box.set_corner_radius_all(int(r))
+		box.set_corner_radius_all(int(_cell * 0.2))
 		box.anti_aliasing = true
 		_tile_boxes[color] = box
 	draw_style_box(box, rect)

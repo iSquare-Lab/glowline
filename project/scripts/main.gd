@@ -4,8 +4,8 @@ extends Control
 
 ## The browser tab title. Godot sets the window title to the project name when it starts, so set it again.
 const TITLE := "Glowline · a light puzzle"
-## How long the lit board shows before the results open over it.
-const RESULT_DELAY := 0.7
+## How long the lit board shows (the ripple from the sun and the fireflies) before the results open over it.
+const RESULT_DELAY := 0.9
 const TOUCH_HINT := "Tap a tile to turn it · hold it to lock it"
 const MOUSE_HINT := "Click a tile to turn it · right-click to lock it · keys: arrows, Space, L"
 
@@ -19,6 +19,7 @@ var puzzle: Puzzle
 var announcement := ""
 
 var _menu: Control
+var _menu_fireflies: Fireflies
 var _levels: LevelSelect
 var _game: Control
 var _dialog: Dialog
@@ -51,6 +52,9 @@ func _ready() -> void:
 	sfx = Sfx.new()
 	add_child(sfx)
 	sfx.enabled = progress.sound
+	add_child(Backdrop.new())
+	_menu_fireflies = Fireflies.new()
+	add_child(_menu_fireflies)
 	_build_menu()
 	_levels = LevelSelect.new()
 	_levels.chosen.connect(_start_level)
@@ -105,7 +109,7 @@ func _build_menu() -> void:
 	var title := Ui.label("Glowline", 50)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(title)
-	var tagline := Ui.label("Turn the tiles. Light every lantern.", 20, Ui.MUTED)
+	var tagline := Ui.label("Turn the vines. Light the garden lanterns.", 20, Ui.MUTED)
 	tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(tagline)
 	column.add_child(Ui.spacer(8))
@@ -151,6 +155,7 @@ func _show(screen: Control) -> void:
 	_screen_id += 1
 	for each in [_menu, _levels, _game, _dialog]:
 		each.visible = each == screen
+	_menu_fireflies.set_active(screen == _menu)
 
 
 func _toggle_sound() -> void:
@@ -359,7 +364,7 @@ func _close_dialog() -> void:
 
 func _show_help() -> void:
 	var lines: Array[String] = [
-		"Light flows from the sun in the middle along the pipes. Turn the tiles so every lantern glows and no pipe ends in the dark.",
+		"Light flows from the sun in the middle along the vines. Turn the tiles so every paper lantern glows and no vine ends in the dark.",
 		"Tap or click a tile to turn it. Hold it, or right-click it, to lock a tile you are sure of; it cannot turn until you unlock it.",
 	]
 	if not DisplayServer.is_touchscreen_available():

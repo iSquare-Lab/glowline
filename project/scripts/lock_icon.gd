@@ -2,7 +2,7 @@ class_name LockIcon
 extends Control
 ## A small padlock: on locked tiles (drawn by the board with draw_lock) and on levels not open yet.
 
-const COLOR := Color("c9d4ea")
+const COLOR := Color("f3e2cc")
 
 
 func _init(icon_size: float = 18.0) -> void:
