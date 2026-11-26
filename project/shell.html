@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Glowline · a light puzzle</title>
 		<meta name="description" content="Turn the tiles to carry light from the sun to every lantern. 40 levels and a new puzzle every day. Made with Godot.">
 		<meta name="theme-color" content="#10141e">
@@ -89,6 +89,19 @@ body {
 	line-height: 1.4;
 }
 
+/* Read by screen readers only: the game draws on a canvas, so it reports the board here. */
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	border: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
 @media (prefers-reduced-motion: reduce) {
 	#status-fill {
 		transition: none;
@@ -120,11 +133,18 @@ body {
 			<div id="status-notice" role="alert"></div>
 		</div>
 
+		<div id="announcer" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+
 		<script src="$GODOT_URL"></script>
 		<script>
 const GODOT_CONFIG = $GODOT_CONFIG;
 const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
 const engine = new Engine(GODOT_CONFIG);
+
+// The game calls this (through JavaScriptBridge) with lines such as "Level 4 · 3 of 5 lanterns lit · 7 moves".
+window.glowlineAnnounce = function (text) {
+	document.getElementById('announcer').textContent = String(text);
+};
 
 (function () {
 	const statusOverlay = document.getElementById('status');
