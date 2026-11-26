@@ -1,7 +1,8 @@
 class_name Board
 extends Control
 ## Draws a Puzzle and turns its tiles. Tap or click turns a tile clockwise (Shift: the other way);
-## a long press or a right click locks it. Keys: arrows move, Space or Enter turns, Q turns back, L locks.
+## a long press or a right click locks it. Keys: arrows or WASD move, Space, Enter or E turns (Shift: the other
+## way), Q turns back, L locks.
 
 signal turned(index: int, clockwise: bool)
 signal lock_changed(index: int)
@@ -32,6 +33,8 @@ var _cursor := Vector2i.ZERO
 var _show_cursor := false
 var _win_time := -1.0
 var _clock := 0.0
+## One rounded tile style per colour, made again when the tile size changes.
+var _tile_boxes := {}
 
 
 func _ready() -> void:
@@ -64,7 +67,8 @@ func _refresh() -> void:
 func _layout() -> void:
 	if puzzle == null:
 		return
-	_cell = floor(min(size.x / puzzle.width, size.y / puzzle.height))
+	_cell = floorf(minf(size.x / puzzle.width, size.y / puzzle.height))
+	_tile_boxes.clear()
 	_origin = ((size - Vector2(_cell * puzzle.width, _cell * puzzle.height)) / 2.0).floor()
 	queue_redraw()
 
@@ -84,6 +88,8 @@ func _process(delta: float) -> void:
 
 
 func _cell_at(point: Vector2) -> int:
+	if _cell <= 0.0:
+		return -1
 	var local := (point - _origin) / _cell
 	var cell := Vector2i(floor(local.x), floor(local.y))
 	return puzzle.index(cell) if puzzle.in_bounds(cell) else -1
@@ -185,9 +191,9 @@ func _draw() -> void:
 	var pulse := 0.0
 	if _win_time >= 0.0:
 		pulse = 0.5 + 0.5 * sin((_clock - _win_time) * 4.0)
-	var gap: float = max(2.0, _cell * 0.05)
-	var radius: float = _cell * 0.16
-	var pipe: float = max(3.0, _cell * 0.17)
+	var gap := maxf(2.0, _cell * 0.05)
+	var radius := _cell * 0.16
+	var pipe := maxf(3.0, _cell * 0.17)
 	var reach := _cell / 2.0
 	var count := puzzle.width * puzzle.height
 	# Three passes, so a glow is never painted over by the next tile: tiles, then glows, then pipes and lights.
@@ -229,7 +235,7 @@ func _draw() -> void:
 			_draw_lock(top_left + Vector2(_cell - gap - _cell * 0.17, gap + _cell * 0.13))
 	if _show_cursor and has_focus() and interactive:
 		var top_left := _origin + Vector2(_cursor) * _cell
-		draw_rect(Rect2(top_left + Vector2(1, 1), Vector2(_cell - 2, _cell - 2)), CURSOR, false, max(2.0, _cell * 0.05))
+		draw_rect(Rect2(top_left + Vector2(1, 1), Vector2(_cell - 2, _cell - 2)), CURSOR, false, maxf(2.0, _cell * 0.05))
 
 
 ## The pipe arm from a tile's centre to the middle of side `d`, `thickness` wide, centred on its axis.
@@ -262,19 +268,19 @@ func _draw_lantern(center: Vector2, lit: bool, pulse: float) -> void:
 		draw_circle(center, r * 0.5, Color("fff7e3"))
 	else:
 		draw_circle(center, r, BG_TILE)
-		draw_arc(center, r, 0.0, TAU, 32, LANTERN_OFF, max(2.0, _cell * 0.05), true)
+		draw_arc(center, r, 0.0, TAU, 32, LANTERN_OFF, maxf(2.0, _cell * 0.05), true)
 
 
 func _draw_lock(at: Vector2) -> void:
-	var s := _cell * 0.13
-	var body := Rect2(at + Vector2(-s * 0.55, -s * 0.1), Vector2(s * 1.1, s * 0.85))
-	draw_arc(at + Vector2(0, -s * 0.1), s * 0.36, PI, TAU, 12, Color("c9d4ea"), max(1.5, s * 0.18), true)
-	draw_rect(body, Color("c9d4ea"))
+	LockIcon.draw_lock(self, at, _cell * 0.13, LockIcon.COLOR)
 
 
 func _draw_rounded_rect(rect: Rect2, r: float, color: Color) -> void:
-	var box := StyleBoxFlat.new()
-	box.bg_color = color
-	box.set_corner_radius_all(int(r))
-	box.anti_aliasing = true
+	var box: StyleBoxFlat = _tile_boxes.get(color)
+	if box == null:
+		box = StyleBoxFlat.new()
+		box.bg_color = color
+		box.set_corner_radius_all(int(r))
+		box.anti_aliasing = true
+		_tile_boxes[color] = box
 	draw_style_box(box, rect)

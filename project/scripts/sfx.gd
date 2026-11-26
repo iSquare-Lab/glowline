@@ -22,12 +22,12 @@ func _ready() -> void:
 		_players.append(player)
 
 
-func play(name: String) -> void:
-	if not enabled or not _sounds.has(name):
+func play(sound_name: String) -> void:
+	if not enabled or not _sounds.has(sound_name):
 		return
 	var player := _players[_next]
 	_next = (_next + 1) % _players.size()
-	player.stream = _sounds[name]
+	player.stream = _sounds[sound_name]
 	player.play()
 
 
