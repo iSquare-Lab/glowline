@@ -92,7 +92,8 @@ There is no linter for GDScript here; the scripts are fully typed and load with 
   sounds made in code.
 
 `icon.svg` at the root is the listing icon. `project/icon.svg` is the same picture inside the Godot project,
-where the engine needs it (the favicon and app icon of the export are made from it).
+where the engine needs it (the favicon and app icon of the export are made from it). `docs/icon.png` is a
+512 px PNG of the same icon.
 
 ## Licences
 
