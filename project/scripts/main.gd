@@ -64,6 +64,7 @@ func _ready() -> void:
 	_build_game()
 	_dialog = Dialog.new()
 	add_child(_dialog)
+	_dialog.visibility_changed.connect(_on_dialog_visibility_changed)
 	_show_menu()
 	if not progress.seen_help:
 		progress.seen_help = true
@@ -131,12 +132,13 @@ func _build_menu() -> void:
 func _show_menu() -> void:
 	_show(_menu)
 	var solved := progress.solved_count()
-	if solved == 0:
+	var level := _continue_level()
+	if _saved_level() > 0 or (solved > 0 and solved < Levels.COUNT):
+		_continue_button.text = "Continue · level %d" % level
+	elif solved == 0:
 		_continue_button.text = "Play"
-	elif solved < Levels.COUNT:
-		_continue_button.text = "Continue · level %d" % progress.next_level()
 	else:
-		_continue_button.text = "Play again"
+		_continue_button.text = "Play again · level %d" % level
 	_menu_progress.text = "%d of %d levels · %s" % [solved, Levels.COUNT, Ui.count_of(progress.star_total(), "star")]
 	var today := Levels.today()
 	var best := progress.daily_best(today)
@@ -229,7 +231,25 @@ func _start_level(level: int, resume: bool = true) -> void:
 
 
 func _continue_journey() -> void:
-	_start_level(clampi(progress.next_level(), 1, Levels.COUNT))
+	_start_level(_continue_level())
+
+
+## The level Continue opens: the half-done board if there is one, else the first level not solved yet,
+## else (every level solved) level 1 again.
+func _continue_level() -> int:
+	var saved := _saved_level()
+	if saved > 0:
+		return saved
+	var next := progress.next_level()
+	return next if next <= Levels.COUNT else 1
+
+
+## The level of the half-done journey board, 0 when there is none.
+func _saved_level() -> int:
+	var key := progress.saved_key("journey")
+	if key.is_valid_int() and int(key) >= 1 and int(key) <= Levels.COUNT:
+		return int(key)
+	return 0
 
 
 ## Starts the daily puzzle of `date`, today's when empty. Restart passes the date it began with, so a
@@ -308,8 +328,14 @@ func _undo_turn() -> void:
 	_save_board()
 
 
+## Saves the board in play into its mode's one slot, but only once it has a move in it: just opening a level
+## and backing out must not replace a half-done board of another level. A board undone back to nothing
+## frees the slot if it was its own.
 func _save_board() -> void:
-	progress.save_board(_mode, _board_key(), puzzle, _moves, _seconds, _undo)
+	if _moves > 0 or not _undo.is_empty():
+		progress.save_board(_mode, _board_key(), puzzle, _moves, _seconds, _undo)
+	elif progress.saved_key(_mode) == _board_key():
+		progress.clear_board(_mode)
 
 
 func _update_stats() -> void:
@@ -386,3 +412,10 @@ func _announce(text: String) -> void:
 		var window: Variant = JavaScriptBridge.get_interface("window")
 		if window != null and window.glowlineAnnounce != null:
 			window.glowlineAnnounce(text)
+
+
+## While a dialog is open, nothing behind it can take the keyboard focus (Tab or arrows would reach it).
+func _on_dialog_visibility_changed() -> void:
+	var behavior := Control.FOCUS_BEHAVIOR_DISABLED if _dialog.visible else Control.FOCUS_BEHAVIOR_INHERITED
+	for screen: Control in [_menu, _levels, _game]:
+		screen.focus_behavior_recursive = behavior

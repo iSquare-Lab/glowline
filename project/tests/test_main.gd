@@ -137,3 +137,48 @@ func test_locked_levels_show_a_padlock() -> void:
 	check(not first.disabled and not first.get_child(0).get_node("Lock").visible, "level 1 is open")
 	check(second.disabled and second.get_child(0).get_node("Lock").visible, "level 2 is locked, with a padlock")
 	main.free()
+
+
+func test_opening_another_level_keeps_the_half_done_board() -> void:
+	var main := _make_main()
+	main._start_level(12)
+	main.board._turn(0, true)
+	main._show_menu()
+	main._start_level(3)
+	main._show_menu()
+	check_eq(main._continue_button.text, "Continue · level 12", "Continue names the half-done level")
+	main._continue_journey()
+	check_eq(main._level, 12, "and opens it")
+	check_eq(main._moves, 1, "with its move")
+	main.free()
+
+
+func test_undoing_everything_frees_the_slot() -> void:
+	var main := _make_main()
+	main._start_level(5)
+	main.board._turn(0, true)
+	main._undo_turn()
+	main._show_menu()
+	check_eq(main.progress.saved_key("journey"), "", "nothing left to continue")
+	check_eq(main._continue_button.text, "Play", "so the menu says Play")
+	main.free()
+
+
+func test_after_the_last_level_play_again_says_where_it_goes() -> void:
+	var main := _make_main()
+	for level in range(1, Levels.COUNT + 1):
+		main.progress.record_level(level, 3)
+	main._show_menu()
+	check_eq(main._continue_button.text, "Play again · level 1", "the label names the level")
+	main._continue_journey()
+	check_eq(main._level, 1, "and that is the level it opens")
+	main.free()
+
+
+func test_nothing_behind_a_dialog_takes_focus() -> void:
+	var main := _make_main()
+	main._show_help()
+	check_eq(main._continue_button.get_focus_mode_with_override(), Control.FOCUS_NONE, "the menu cannot take focus under How to play")
+	main._close_dialog()
+	check_eq(main._continue_button.get_focus_mode_with_override(), Control.FOCUS_ALL, "and can again once it is closed")
+	main.free()

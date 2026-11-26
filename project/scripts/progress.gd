@@ -131,6 +131,11 @@ func restore_board(mode: String, key: String, puzzle: Puzzle) -> Dictionary:
 	}
 
 
+## Which level or date the saved board of `mode` belongs to, "" when there is none.
+func saved_key(mode: String) -> String:
+	return str(_file.get_value("board_" + mode, "key", ""))
+
+
 func clear_board(mode: String) -> void:
 	var section := "board_" + mode
 	if _file.has_section(section):
