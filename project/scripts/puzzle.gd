@@ -42,12 +42,19 @@ static func turns_between(from: int, to: int) -> int:
 	return -1
 
 
+## Fewest moves from `from` to `to` when a move turns a tile either way (three clockwise turns are one turn
+## back), or -1 when no turn gets there.
+static func fewest_turns(from: int, to: int) -> int:
+	var k := turns_between(from, to)
+	return -1 if k < 0 else mini(k, 4 - k)
+
+
 func index(cell: Vector2i) -> int:
 	return cell.y * width + cell.x
 
 
 func cell_of(i: int) -> Vector2i:
-	return Vector2i(i % width, i / width)
+	return Vector2i(i % width, floori(float(i) / width))
 
 
 func in_bounds(cell: Vector2i) -> bool:
@@ -58,10 +65,24 @@ func is_lantern(i: int) -> bool:
 	return i != index(source) and bit_count(solution[i]) == 1
 
 
-func generate(w: int, h: int, seed_value: int) -> void:
+## A board made by hand (the tests use it): `answer` is the solved board, `start` how its tiles are turned now.
+func setup(w: int, h: int, sun: Vector2i, answer: Array, start: Array) -> void:
 	width = w
 	height = h
-	source = Vector2i(w / 2, h / 2)
+	source = sun
+	solution = PackedInt32Array(answer)
+	tiles = PackedInt32Array(start)
+	locked = PackedByteArray()
+	locked.resize(w * h)
+	par = compute_par()
+
+
+## Makes the board for `seed_value`. With `scramble` 0 every tile starts turned at random; a positive `scramble`
+## turns only that many tiles a quarter turn, so the board takes exactly that many moves (the teaching levels).
+func generate(w: int, h: int, seed_value: int, scramble: int = 0) -> void:
+	width = w
+	height = h
+	source = Vector2i(floori(w / 2.0), floori(h / 2.0))
 	var count := w * h
 	solution = PackedInt32Array()
 	solution.resize(count)
@@ -94,8 +115,11 @@ func generate(w: int, h: int, seed_value: int) -> void:
 			visited[index(to)] = 1
 			_add_edges(to, visited, frontier)
 	tiles = solution.duplicate()
-	for i in count:
-		tiles[i] = rotate_cw(solution[i], rng.randi_range(0, 3))
+	if scramble <= 0:
+		for i in count:
+			tiles[i] = rotate_cw(solution[i], rng.randi_range(0, 3))
+	else:
+		_scramble_some(scramble, rng)
 	# Never start solved: turn the first tile whose turns matter until the board is not.
 	var guard := 0
 	while is_solved() and guard < count:
@@ -103,9 +127,29 @@ func generate(w: int, h: int, seed_value: int) -> void:
 		if rotate_cw(tiles[i]) != tiles[i]:
 			tiles[i] = rotate_cw(tiles[i])
 		guard += 1
-	par = 0
-	for i in count:
-		par += turns_between(tiles[i], solution[i])
+	par = compute_par()
+
+
+## The fewest moves from the board as it is now to the generator's answer. Another answer may need fewer.
+func compute_par() -> int:
+	var total := 0
+	for i in width * height:
+		total += fewest_turns(tiles[i], solution[i])
+	return total
+
+
+## Turns `amount` different tiles (only ones a quarter turn changes) one quarter turn, either way.
+func _scramble_some(amount: int, rng: RandomNumberGenerator) -> void:
+	var turnable: Array[int] = []
+	for i in width * height:
+		if rotate_cw(solution[i]) != solution[i]:
+			turnable.append(i)
+	for n in mini(amount, turnable.size()):
+		var pick := rng.randi_range(n, turnable.size() - 1)
+		var i := turnable[pick]
+		turnable[pick] = turnable[n]
+		turnable[n] = i
+		tiles[i] = rotate_cw(solution[i], 1 if rng.randi_range(0, 1) == 0 else 3)
 
 
 func _add_edges(cell: Vector2i, visited: PackedByteArray, frontier: Array[Vector3i]) -> void:
