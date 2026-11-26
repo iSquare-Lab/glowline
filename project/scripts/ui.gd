@@ -102,5 +102,6 @@ static func reduced_motion() -> bool:
 		_reduced_motion = 0
 		if OS.has_feature("web"):
 			var reduce: Variant = JavaScriptBridge.eval("window.matchMedia('(prefers-reduced-motion: reduce)').matches", true)
-			_reduced_motion = 1 if reduce == true else 0
+			# The bridge hands a JavaScript boolean back as an int (1 or 0), so convert it.
+			_reduced_motion = 1 if bool(reduce) else 0
 	return _reduced_motion == 1

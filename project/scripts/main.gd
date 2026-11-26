@@ -2,7 +2,8 @@ extends Control
 ## Glowline's screens and how a game flows: the menu, the level list, the game screen and its dialogs.
 ## The levels live in Levels, saved progress in Progress, the shared look in Ui.
 
-## The browser tab title. Godot sets the window title to the project name when it starts, so set it again.
+## The browser tab title. Godot sets the window title to the project name after the main scene is ready, so
+## set it again one step later (the page shell sets it too, once the engine has started).
 const TITLE := "Glowline · a light puzzle"
 ## How long the lit board shows (the ripple from the sun and the fireflies) before the results open over it.
 const RESULT_DELAY := 0.9
@@ -46,7 +47,7 @@ var _screen_id := 0
 
 
 func _ready() -> void:
-	DisplayServer.window_set_title(TITLE)
+	DisplayServer.window_set_title.call_deferred(TITLE)
 	progress = Progress.new(progress_path)
 	theme = Ui.make_theme()
 	sfx = Sfx.new()
@@ -207,7 +208,7 @@ func _build_game() -> void:
 
 	# The hint has its own row above the buttons, so it never runs off the right edge, and the buttons
 	# stay on the left: the host page's round button sits in the bottom-right corner.
-	_hint = Ui.label("", 14, Ui.MUTED)
+	_hint = Ui.label("", 16, Ui.MUTED)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(_hint)

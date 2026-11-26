@@ -21,15 +21,18 @@ const RIB_LIT := Color("e0832c")
 const CAP := Color("3a2420")
 
 
-## A vine from `from` to `to`, `width` thick, with round ends. `edge` draws its darker outline first.
-static func vine(item: CanvasItem, from: Vector2, to: Vector2, width: float, color: Color, edge: bool) -> void:
+## A vine from `from` to `to`, `width` thick. `from` is always round; `to` is round unless `round_to` is false
+## (a vine ending at a tile's edge, where the next tile's vine carries on). `edge` draws a darker outline first.
+static func vine(item: CanvasItem, from: Vector2, to: Vector2, width: float, color: Color, edge: bool, round_to: bool = true) -> void:
 	if edge:
 		item.draw_line(from, to, VINE_EDGE, width + 3.0)
 		item.draw_circle(from, (width + 3.0) / 2.0, VINE_EDGE)
-		item.draw_circle(to, (width + 3.0) / 2.0, VINE_EDGE)
+		if round_to:
+			item.draw_circle(to, (width + 3.0) / 2.0, VINE_EDGE)
 	item.draw_line(from, to, color, width)
 	item.draw_circle(from, width / 2.0, color)
-	item.draw_circle(to, width / 2.0, color)
+	if round_to:
+		item.draw_circle(to, width / 2.0, color)
 
 
 ## An almond-shaped leaf growing from `at` in direction `angle`.

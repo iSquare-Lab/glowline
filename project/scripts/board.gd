@@ -251,15 +251,12 @@ func _draw() -> void:
 			stone = stone.lightened(0.1)
 		_draw_rounded_rect(Rect2(rect.position + Vector2(0, gap * 0.7), rect.size), STONE_SHADOW)
 		_draw_rounded_rect(rect, stone)
+	# A soft round halo on every lit tile (wide glow lines looked like boxes on big tiles).
 	for i in count:
 		var lit := light_of(i)
-		if lit <= 0.0:
-			continue
-		draw_set_transform(_center(i), _angles[i], Vector2.ONE)
-		for d in 4:
-			if puzzle.tiles[i] & (1 << d):
-				draw_line(Vector2.ZERO, Vector2(Puzzle.DIRS[d]) * reach, Color(GardenPainter.GLOW, GardenPainter.GLOW.a * 0.6 * lit), vine * 2.3)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		if lit > 0.0:
+			draw_circle(_center(i), _cell * 0.46, Color(GardenPainter.GLOW, 0.05 * lit))
+			draw_circle(_center(i), _cell * 0.32, Color(GardenPainter.GLOW, 0.06 * lit))
 	for i in count:
 		var ripple := 0.0
 		if since_win >= 0.0 and not calm:
@@ -297,7 +294,7 @@ func _draw_vines(i: int, reach: float, width: float, flash: float) -> void:
 	draw_set_transform(_center(i), _angles[i], Vector2.ONE)
 	for d in 4:
 		if mask & (1 << d):
-			GardenPainter.vine(self, Vector2.ZERO, Vector2(Puzzle.DIRS[d]) * reach, width, GardenPainter.VINE_DARK, true)
+			GardenPainter.vine(self, Vector2.ZERO, Vector2(Puzzle.DIRS[d]) * reach, width, GardenPainter.VINE_DARK, true, false)
 	var color := GardenPainter.VINE_LIT.lerp(GardenPainter.VINE_FLASH, clampf(flash, 0.0, 1.0) * 0.6)
 	if lit > 0.0:
 		for d in 4:
@@ -305,11 +302,11 @@ func _draw_vines(i: int, reach: float, width: float, flash: float) -> void:
 				continue
 			var out := Vector2(Puzzle.DIRS[d]) * reach
 			if is_sun:
-				GardenPainter.vine(self, Vector2.ZERO, out * lit, width, color, false)
+				GardenPainter.vine(self, Vector2.ZERO, out * lit, width, color, false, lit < 1.0)
 			elif d == _entry[i]:
-				GardenPainter.vine(self, out, out * (1.0 - minf(1.0, lit * 2.0)), width, color, false)
+				GardenPainter.vine(self, out * (1.0 - minf(1.0, lit * 2.0)), out, width, color, false, false)
 			elif lit > 0.5:
-				GardenPainter.vine(self, Vector2.ZERO, out * (lit * 2.0 - 1.0), width, color, false)
+				GardenPainter.vine(self, Vector2.ZERO, out * (lit * 2.0 - 1.0), width, color, false, lit < 1.0)
 	# One leaf on each vine, on alternating sides, greening as the light passes.
 	for d in 4:
 		if mask & (1 << d):

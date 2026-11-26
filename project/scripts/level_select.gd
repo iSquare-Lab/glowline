@@ -7,9 +7,9 @@ signal back
 
 const BUTTON_SIZE := Vector2(84, 76)
 const GAP := 12
-## Space kept free at the bottom, so the last row can scroll clear of the round button the host page
-## puts in the bottom-right corner.
-const BOTTOM_CLEAR := 72
+## Space kept free below the list, so neither its last row nor its scroll bar sits under the round button
+## the host page puts in the bottom-right corner (32 px at 16 px from the corner: 59 units on a phone).
+const BOTTOM_CLEAR := 64
 
 var _grid: GridContainer
 
@@ -18,7 +18,7 @@ func _init() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top"]:
 		add_theme_constant_override("margin_" + side, 22)
-	add_theme_constant_override("margin_bottom", 8)
+	add_theme_constant_override("margin_bottom", BOTTOM_CLEAR)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 18)
 	add_child(column)
@@ -38,7 +38,7 @@ func _init() -> void:
 	var center := CenterContainer.new()
 	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inner.add_child(center)
-	inner.add_child(Ui.spacer(BOTTOM_CLEAR))
+	inner.add_child(Ui.spacer(8))
 	_grid = GridContainer.new()
 	_grid.columns = 5
 	_grid.add_theme_constant_override("h_separation", GAP)
