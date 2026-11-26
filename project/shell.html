@@ -19,11 +19,12 @@ body {
 	color: #fbefe0;
 	background-color: #1f1629;
 	overflow: hidden;
-	touch-action: none;
 	font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 #canvas {
+	/* The game handles its own taps and holds on the canvas; the page around it can still be pinch-zoomed. */
+	touch-action: none;
 	display: block;
 }
 

@@ -6,7 +6,6 @@ extends RefCounted
 const SKY_TOP := Color("1f1629")
 const SKY_BOTTOM := Color("5a3446")
 const HORIZON := Color("c9805a")
-const BG := SKY_TOP
 const PANEL := Color("2b1f35")
 const BUTTON := Color("3d2c45")
 const BUTTON_HOVER := Color("4d3956")

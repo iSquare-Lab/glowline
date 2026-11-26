@@ -17,6 +17,8 @@ const FLOW_STEP := 0.06
 const FLOW_FILL := 0.12
 ## Seconds for the win ripple to move one tile further from the sun.
 const RIPPLE_STEP := 0.04
+## Seconds the ripple takes to pass over one tile (half of it on each side of its peak).
+const RIPPLE_WIDTH := 0.36
 
 ## Flagstones in three shades of moss, so the board does not look like a grid of identical cells.
 const STONES: Array[Color] = [Color("3a4535"), Color("404b3a"), Color("36412f")]
@@ -258,27 +260,29 @@ func _draw() -> void:
 			draw_circle(_center(i), _cell * 0.46, Color(GardenPainter.GLOW, 0.05 * lit))
 			draw_circle(_center(i), _cell * 0.32, Color(GardenPainter.GLOW, 0.06 * lit))
 	for i in count:
-		var ripple := 0.0
-		if since_win >= 0.0 and not calm:
-			ripple = clampf(1.0 - absf(since_win - _depth[i] * RIPPLE_STEP) / 0.18, 0.0, 1.0)
-		_draw_vines(i, reach, vine, ripple + pulse * 0.25)
+		_draw_vines(i, reach, vine, _ripple_at(i, since_win, calm) + pulse * 0.25)
 	for i in count:
 		var center := _center(i)
 		var lit := light_of(i)
-		var ripple := 0.0
-		if since_win >= 0.0 and not calm:
-			ripple = clampf(1.0 - absf(since_win - _depth[i] * RIPPLE_STEP) / 0.18, 0.0, 1.0)
 		if puzzle.cell_of(i) == puzzle.source:
 			GardenPainter.sun(self, center, _cell * 0.22, 0.0 if calm else _clock * 0.25, pulse)
 		elif puzzle.is_lantern(i):
 			var swing := 0.0 if calm else sin(_clock * 1.7 + i * 1.3) * 0.07 * lit
-			GardenPainter.lantern(self, center, _cell * 0.19, lit, swing, ripple)
+			GardenPainter.lantern(self, center, _cell * 0.19, lit, swing, _ripple_at(i, since_win, calm))
 		if puzzle.locked[i]:
 			var top_left := _origin + Vector2(puzzle.cell_of(i)) * _cell
 			LockIcon.draw_lock(self, top_left + Vector2(_cell - gap - _cell * 0.16, gap + _cell * 0.14), _cell * 0.12, LockIcon.COLOR)
 	if _show_cursor and has_focus() and interactive:
 		var top_left := _origin + Vector2(_cursor) * _cell
 		draw_rect(Rect2(top_left + Vector2(1, 1), Vector2(_cell - 2, _cell - 2)), Ui.FOCUS, false, maxf(2.0, _cell * 0.05))
+
+
+## How bright the win ripple makes tile `i` now (0-1), `since_win` seconds after the board was solved:
+## it peaks when the ripple, moving out from the sun, reaches the tile. 0 before a win or with reduced motion.
+func _ripple_at(i: int, since_win: float, calm: bool) -> float:
+	if since_win < 0.0 or calm:
+		return 0.0
+	return clampf(1.0 - absf(since_win - _depth[i] * RIPPLE_STEP) / (RIPPLE_WIDTH / 2.0), 0.0, 1.0)
 
 
 func _center(i: int) -> Vector2:

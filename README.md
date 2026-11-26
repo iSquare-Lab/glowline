@@ -17,7 +17,9 @@ along the vines. Turn the tiles so every paper lantern glows and no vine ends in
   one for any solution.
 - **Lock** a tile you are sure of so it cannot turn by mistake: hold it (touch or mouse), right-click it, or press
   L on it. Locking again unlocks it. **Undo** and **restart** any time.
-- **Continue** picks up a board you left half done, with its moves, time and undo history.
+- **Continue** picks up the board you left half done (the menu says which level), with its moves, time and undo
+  history; opening another level and leaving it untouched does not replace it. Without one, Continue opens the
+  first level not solved yet, and once all 40 are solved it says "Play again · level 1".
 - **Touch, mouse and keyboard**: tap or click turns a tile clockwise, Shift+click the other way.
   Keys: arrows or WASD move, Space, Enter or E turn (Shift: the other way), Q turns back, L locks,
   U or Ctrl+Z undoes, R restarts, Esc leaves. Menus work with the arrows, Tab and Enter.
@@ -44,7 +46,7 @@ the game, with its own loading screen and the live region.
 | File | Size |
 |---|---|
 | `index.wasm` (Godot 4.7.2 engine) | 39.5 MB |
-| `index.pck` (the game) | about 50 KB |
+| `index.pck` (the game) | about 68 KB |
 | everything else | 0.4 MB |
 
 ## Build, test and run

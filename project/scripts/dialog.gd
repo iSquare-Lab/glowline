@@ -64,7 +64,7 @@ func open(heading: String, star_count: int, lines: Array[String], buttons: Array
 		first.grab_focus.call_deferred()
 
 
-## The heading of the open dialog, or "" when it is closed (the tests read it).
+## For the tests: the heading of the open dialog, or "" when it is closed.
 func heading() -> String:
 	if not visible or _box.get_child_count() == 0:
 		return ""
