@@ -182,3 +182,26 @@ func test_nothing_behind_a_dialog_takes_focus() -> void:
 	main._close_dialog()
 	check_eq(main._continue_button.get_focus_mode_with_override(), Control.FOCUS_ALL, "and can again once it is closed")
 	main.free()
+
+
+## Collects the engine's errors and warnings while a test runs.
+class Collector extends Logger:
+	var lines: Array[String] = []
+
+	func _log_error(function: String, file: String, line: int, code: String, rationale: String, _editor_notify: bool, error_type: int, _script_backtraces: Array[ScriptBacktrace]) -> void:
+		lines.append("%d %s (%s at %s:%d %s)" % [error_type, rationale, code, file, line, function])
+
+
+func test_first_visit_focus_lands_on_got_it_quietly() -> void:
+	var collector := Collector.new()
+	OS.add_logger(collector)
+	var main := MainScene.instantiate()
+	main.progress_path = ""
+	tree.root.add_child(main)
+	await tree.process_frame
+	await tree.process_frame
+	OS.remove_logger(collector)
+	var owner := tree.root.gui_get_focus_owner()
+	check(owner is Button and (owner as Button).text == "Got it", "focus is on Got it (%s)" % [owner])
+	check_eq(collector.lines, [] as Array[String], "nothing logged on the first visit")
+	main.free()

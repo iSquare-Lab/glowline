@@ -147,7 +147,7 @@ func _show_menu() -> void:
 	else:
 		_daily_button.text = "Daily puzzle · %s" % today
 	_sound_button.text = "Sound: on" if sfx.enabled else "Sound: off"
-	_continue_button.grab_focus.call_deferred()
+	Ui.focus_later(_continue_button)
 
 
 ## Shows one screen and hides the rest. A board in play is saved first, so Continue picks it up again.
@@ -282,7 +282,7 @@ func _begin(resume: bool) -> void:
 	_lanterns_on = puzzle.lanterns_lit().x
 	_update_stats()
 	_announce_board()
-	board.grab_focus.call_deferred()
+	Ui.focus_later(board)
 	_hint.text = TOUCH_HINT if DisplayServer.is_touchscreen_available() else MOUSE_HINT
 
 
@@ -384,9 +384,9 @@ func _on_solved() -> void:
 func _close_dialog() -> void:
 	_dialog.visible = false
 	if _menu.visible:
-		_continue_button.grab_focus.call_deferred()
+		Ui.focus_later(_continue_button)
 	elif _game.visible:
-		board.grab_focus.call_deferred()
+		Ui.focus_later(board)
 
 
 func _show_help() -> void:

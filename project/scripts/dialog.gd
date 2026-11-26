@@ -61,7 +61,7 @@ func open(heading: String, star_count: int, lines: Array[String], buttons: Array
 			first = button
 	visible = true
 	if first:
-		first.grab_focus.call_deferred()
+		Ui.focus_later(first)
 
 
 ## For the tests: the heading of the open dialog, or "" when it is closed.

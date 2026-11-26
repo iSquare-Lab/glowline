@@ -104,3 +104,16 @@ static func reduced_motion() -> bool:
 			# The bridge hands a JavaScript boolean back as an int (1 or 0), so convert it.
 			_reduced_motion = 1 if bool(reduce) else 0
 	return _reduced_motion == 1
+
+
+## Gives `control` the keyboard focus at the end of this frame, if it can still take it then. Something
+## may have changed meanwhile (a dialog opened over it, the screen changed), and grabbing the focus of a
+## control that cannot take it logs a warning.
+static func focus_later(control: Control) -> void:
+	# Keep the id, not the control: it may be freed before the end of the frame.
+	var id := control.get_instance_id()
+	var grab := func() -> void:
+		var target := instance_from_id(id) as Control
+		if target != null and target.is_visible_in_tree() and target.get_focus_mode_with_override() != Control.FOCUS_NONE:
+			target.grab_focus()
+	grab.call_deferred()

@@ -99,7 +99,7 @@ func refresh(progress: Progress) -> void:
 		else:
 			button.tooltip_text = "Level %d, %d×%d, %d of 3 stars" % [level, level_size.x, level_size.y, star_count]
 	_fit_columns()
-	(_grid.get_child(clampi(next, 1, Levels.COUNT) - 1) as Button).grab_focus.call_deferred()
+	Ui.focus_later(_grid.get_child(clampi(next, 1, Levels.COUNT) - 1) as Button)
 
 
 func _fit_columns() -> void:
